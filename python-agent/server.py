@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import chainer
 import cherrypy
 import argparse
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
 from cnn_dqn_agent import CnnDqnAgent
 import msgpack
+import os.path as osp
 import io
 from PIL import Image
 from PIL import ImageOps
@@ -21,6 +23,7 @@ parser.add_argument('--gpu', '-g', default=-1, type=int,
                     help='GPU ID (negative value indicates CPU)')
 parser.add_argument('--log-file', '-l', default='reward.log', type=str,
                     help='reward log file name')
+parser.add_argument('--agent-num', default=1, type=int)
 args = parser.parse_args()
 
 
@@ -39,11 +42,13 @@ class AgentServer(WebSocket):
     agent = CnnDqnAgent()
     agent_initialized = False
     cycle_counter = 0
+    episode_counter = 0
     thread_event = threading.Event()
     log_file = args.log_file
     reward_sum = 0
     depth_image_dim = 32 * 32
     depth_image_count = 1
+    agent_num = args.agent_num
 
     def send_action(self, action):
         dat = msgpack.packb({"command": str(action)})
@@ -89,6 +94,14 @@ class AgentServer(WebSocket):
                     the_file.write(str(self.cycle_counter) +
                                    ',' + str(self.reward_sum) + '\n')
                 self.reward_sum = 0
+                self.episode_counter += 1
+                if self.episode_counter % 5000 == 0:
+                    model = self.agent.q_net.model
+                    save_path = 'q_net_model_agent_{0}_episode{1}.h5'.format(
+                        self.agent_num, self.episode_counter)
+                    chainer.serializers.save_hdf5(
+                        osp.join('trained_model', save_path), model)
+                    print('Agent {0}: trained model saved'.format(self.agent_num))
             else:
                 action, eps, q_now, obs_array = self.agent.agent_step(reward, observation)
                 self.send_action(action)
