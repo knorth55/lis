@@ -24,6 +24,7 @@ parser.add_argument('--gpu', '-g', default=-1, type=int,
 parser.add_argument('--log-file', '-l', default='reward.log', type=str,
                     help='reward log file name')
 parser.add_argument('--agent-num', default=1, type=int)
+parser.add_argument('--episode', default=0, type=int)
 args = parser.parse_args()
 
 
@@ -42,7 +43,7 @@ class AgentServer(WebSocket):
     agent = CnnDqnAgent()
     agent_initialized = False
     cycle_counter = 0
-    episode_counter = 0
+    episode_counter = args.episode 
     thread_event = threading.Event()
     log_file = args.log_file
     reward_sum = 0
@@ -73,9 +74,16 @@ class AgentServer(WebSocket):
         if not self.agent_initialized:
             self.agent_initialized = True
             print ("initializing agent...")
+            if args.episode == 0:
+                model_path = None
+            else:
+                model_name = 'q_net_model_agent_{0}_episode{1}.h5'.format(
+                    args.agent_num, args.episode)
+                model_path = osp.join('trained_model', model_name)
             self.agent.agent_init(
                 use_gpu=args.gpu,
-                depth_image_dim=self.depth_image_dim * self.depth_image_count)
+                depth_image_dim=self.depth_image_dim * self.depth_image_count,
+                model_path=model_path)
 
             action = self.agent.agent_start(observation)
             self.send_action(action)

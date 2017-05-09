@@ -11,11 +11,13 @@ parser.add_argument('--log-file', '-l', default='reward', type=str,
                     help='reward log file name')
 parser.add_argument('--agent-count', '-', default=1, type=int,
                     help='number of agent')
+parser.add_argument('--episode', '-e', default=0, type=int)
 args = parser.parse_args()
 
 for i in six.moves.range(args.agent_count):
-    cmd = "python server.py --gpu={0} --port={1} --log-file={2} --agent-num {3}".format(
-        args.gpu, args.port_start + i, args.log_file +'_'+ str(i) + '.log', i)
+    cmd = "python server.py --gpu={0} --port={1} --log-file={2} --agent-num {3} --episode {4}".format(  # NOQA
+        args.gpu, args.port_start + i, args.log_file + '_' + str(i) + '.log',
+        i, args.episode)
     proc = Popen(cmd, shell=True)
     print("process id = %s" % proc.pid)
 

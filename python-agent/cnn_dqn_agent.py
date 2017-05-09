@@ -5,6 +5,7 @@ import copy
 import os
 import numpy as np
 from chainer import cuda
+import chainer.serializers as S
 
 from cnn_feature_extractor import CnnFeatureExtractor
 from q_net import QNet
@@ -43,6 +44,7 @@ class CnnDqnAgent(object):
     def agent_init(self, **options):
         self.use_gpu = options['use_gpu']
         self.depth_image_dim = options['depth_image_dim']
+        model_path = options['model_path']
         self.q_net_input_dim = self.image_feature_dim * self.image_feature_count + self.depth_image_dim
 
         if os.path.exists(self.cnn_feature_extractor):
@@ -57,6 +59,13 @@ class CnnDqnAgent(object):
         self.time = 0
         self.epsilon = 1.0  # Initial exploratoin rate
         self.q_net = QNet(self.use_gpu, self.actions, self.q_net_input_dim)
+        if model_path is not None:
+            print("loading... Q-net")
+            S.load_hdf5(model_path, self.q_net.model)
+            self.q_net.initial_exploration = 0
+            self.epsilon = 0.05
+            print("loading... Q-net done")
+
 
     def agent_start(self, observation):
         obs_array = self._observation_to_featurevec(observation)
