@@ -322,4 +322,5 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-
+# Trained Model
+python-agent/trained_model
